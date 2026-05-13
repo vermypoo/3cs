@@ -1,0 +1,104 @@
+{
+  "entities": {
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application configuration",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string", "description": "URL of the site logo" },
+        "faviconUrl": { "type": "string", "description": "URL of the site favicon" },
+        "siteName": { "type": "string", "description": "Official name of the site" }
+      }
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A valeting service booking request.",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string", "description": "Full name of the customer" },
+        "email": { "type": "string", "format": "email", "description": "Customer email address" },
+        "phone": { "type": "string", "description": "Customer phone number" },
+        "carModel": { "type": "string", "description": "Make and model of the vehicle" },
+        "serviceId": { "type": "string", "description": "The ID of the chosen valeting service" },
+        "date": { "type": "string", "description": "Requested date for the service" },
+        "time": { "type": "string", "description": "Requested time for the service" },
+        "notes": { "type": "string", "description": "Additional customer requirements or info" },
+        "status": { 
+          "type": "string", 
+          "enum": ["pending", "confirmed", "completed", "cancelled"],
+          "description": "Current status of the booking"
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the booking was created" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp when the booking was last updated" },
+        "source": { 
+          "type": "string", 
+          "enum": ["web", "phone"],
+          "description": "Where the booking originated from"
+        },
+        "adminId": { "type": "string", "description": "UID of the admin who created the phone booking (if applicable)" }
+      },
+      "required": ["customerName", "email", "phone", "carModel", "serviceId", "date", "time", "status", "createdAt", "updatedAt", "source"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "A valeting service package.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the service" },
+        "description": { "type": "string", "description": "Description of what the service includes" },
+        "price": { "type": "string", "description": "Pricing of the service (e.g. £45)" },
+        "duration": { "type": "string", "description": "Approximate duration (e.g. 1.5 Hours)" },
+        "image": { "type": "string", "description": "URL to the service image" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["name", "description", "price", "duration", "order"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A customer review.",
+      "type": "object",
+      "properties": {
+        "author": { "type": "string", "description": "Name of the reviewer" },
+        "rating": { "type": "number", "description": "Star rating out of 5" },
+        "content": { "type": "string", "description": "The review text" },
+        "date": { "type": "string", "description": "When the review was given" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["author", "rating", "content", "order"]
+    },
+    "GalleryItem": {
+      "title": "Gallery Item",
+      "description": "An image for the showcase gallery.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "description": "URL of the image" },
+        "caption": { "type": "string", "description": "Short description of the photo" },
+        "order": { "type": "number", "description": "Display order" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When it was added" }
+      },
+      "required": ["url", "order", "createdAt"]
+    }
+  },
+  "firestore": {
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of all service bookings"
+    },
+    "services/{serviceId}": {
+      "schema": "Service",
+      "description": "Collection of available valeting packages"
+    },
+    "reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Collection of customer reviews"
+    },
+    "gallery/{itemId}": {
+      "schema": "GalleryItem",
+      "description": "Collection of gallery images"
+    },
+    "settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Global site settings"
+    }
+  }
+}

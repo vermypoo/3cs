@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email.lower() == "uwureaperuwus@gmail.com" || 
+        request.auth.token.email.lower() == "uwureaperuwu@gmail.com" || 
+        request.auth.token.email.lower() == "3csvaleting@gmail.com" ||
+        request.auth.uid == "vxribHTzxiaLIp2C9WiL3jSXR113"
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function isValidBooking(data) {
+      return data.customerName is string && data.customerName.size() <= 200 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.phone is string && data.phone.size() <= 50 &&
+             data.carModel is string && data.carModel.size() <= 200 &&
+             data.serviceId is string &&
+             data.date is string &&
+             data.time is string &&
+             (data.notes == null || (data.notes is string && data.notes.size() <= 2000)) &&
+             data.status is string &&
+             data.source is string &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidService(data) {
+      return data.name is string && data.name.size() <= 200 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.price is string && data.price.size() <= 100 &&
+             data.duration is string && data.duration.size() <= 200 &&
+             (data.image == null || (data.image is string && data.image.size() <= 1500000)) &&
+             data.order is number;
+    }
+
+    function isValidReview(data) {
+      return data.author is string && data.author.size() <= 200 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.content is string && data.content.size() <= 3000 &&
+             (data.date == null || (data.date is string && data.date.size() <= 200)) &&
+             data.order is number;
+    }
+
+    function isValidGalleryItem(data) {
+      return data.url is string && data.url.size() <= 1500000 &&
+             (data.caption == null || (data.caption is string && data.caption.size() <= 1000)) &&
+             data.order is number;
+    }
+
+    match /bookings/{bookingId} {
+      allow create: if isValidId(bookingId) && 
+                      isValidBooking(request.resource.data) &&
+                      (request.resource.data.source == 'web' || isAdmin());
+      
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(serviceId) && isValidService(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(reviewId) && isValidReview(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /gallery/{itemId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(itemId) && isValidGalleryItem(request.resource.data);
+      allow update: if isAdmin() && isValidId(itemId) && isValidGalleryItem(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(settingId);
+    }
+  }
+}
