@@ -1,10 +1,22 @@
 import { motion } from 'motion/react';
 import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Logo from './Logo';
+import { subscribeToSettings } from '../lib/services';
+import { AppSettings } from '../types';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToSettings((data) => {
+      setSettings(data);
+    });
+    return () => unsub();
+  }, []);
+
+  const siteName = settings?.siteName || '3CSValeting';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass" id="navbar">
@@ -17,7 +29,7 @@ export default function Navbar() {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <Logo className="w-14 h-14" />
-            <span className="text-2xl font-bold tracking-tight text-white leading-none">3CSValeting</span>
+            <span className="text-2xl font-bold tracking-tight text-white leading-none">{siteName}</span>
           </motion.div>
 
           {/* Desktop Nav */}

@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { Booking, BookingStatus, ServiceType, Service, Review, GalleryItem } from '../../types';
+import { Booking, BookingStatus, ServiceType, Service, Review, GalleryItem, AppSettings } from '../../types';
 import { SERVICES as INITIAL_SERVICES } from '../../constants';
 import { 
   Plus, LogOut, Check, X, Clock, RefreshCcw, 
   Trash2, PhoneCall, Filter, ExternalLink, Calendar, Phone, Mail, Package, Edit2, Save, Trash,
-  MessageSquare, Star, Activity, Image as ImageIcon, Upload, Loader2
+  MessageSquare, Star, Activity, Image as ImageIcon, Upload, Loader2, Settings as SettingsIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   subscribeToServices, saveService, deleteService, seedServicesIfEmpty, 
   subscribeToReviews, saveReview, deleteReview,
   subscribeToGallery, saveGalleryItem, deleteGalleryItem, clearGallery,
-  uploadToServer
+  uploadToServer, subscribeToSettings, saveSettings
 } from '../../lib/services';
 import { handleFirestoreError, OperationType } from '../../lib/firebase-utils';
 
@@ -22,11 +22,12 @@ export default function AdminDashboard() {
   const [services, setServices] = useState<Service[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<BookingStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'reviews' | 'gallery'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'reviews' | 'gallery' | 'settings'>('bookings');
 
   // New Booking State
   const [newBooking, setNewBooking] = useState({
@@ -84,11 +85,16 @@ export default function AdminDashboard() {
       setGallery(data);
     });
 
+    const unsubSettings = subscribeToSettings((data) => {
+      setSettings(data);
+    });
+
     return () => {
       unsubBookings();
       unsubServices();
       unsubReviews();
       unsubGallery();
+      unsubSettings();
     };
   }, []);
 
@@ -220,7 +226,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'gallery' | 'service') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'gallery' | 'service' | 'logo') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
@@ -250,6 +256,9 @@ export default function AdminDashboard() {
         alert(`Successfully uploaded ${urls.length} photos!`);
       } else if (target === 'service' && editingService) {
         setEditingService({ ...editingService, image: urls[0] });
+      } else if (target === 'logo') {
+        await saveSettings({ logoUrl: urls[0] });
+        alert('Logo updated successfully!');
       }
       e.target.value = '';
     } catch (err: any) {
@@ -337,6 +346,12 @@ export default function AdminDashboard() {
           className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shrink-0 ${activeTab === 'gallery' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
         >
           <ImageIcon size={14} /> Gallery
+        </button>
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shrink-0 ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          <SettingsIcon size={14} /> Settings
         </button>
       </div>
 
@@ -700,6 +715,90 @@ export default function AdminDashboard() {
                 <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs">Gallery is empty</p>
               </div>
             )}
+          </div>
+        </div>
+      ) : activeTab === 'settings' ? (
+        /* Settings Management */
+        <div className="grid gap-6">
+          <div className="mb-4">
+             <h3 className="text-xl font-bold uppercase tracking-tight">Global Configurations</h3>
+             <p className="text-slate-500 text-sm mt-1">Control high-level site parameters</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Logo Management */}
+            <div className="glass p-8 rounded-3xl border border-blue-500/10">
+              <h4 className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] mb-6">Identity Asset (Logo)</h4>
+              
+              <div className="flex flex-col items-center gap-8">
+                <div className="w-40 h-40 bg-slate-900/40 rounded-full border-2 border-dashed border-slate-800 flex items-center justify-center overflow-hidden relative group">
+                  {settings?.logoUrl ? (
+                    <img src={settings.logoUrl} className="w-full h-full object-contain p-4" alt="Site Logo" />
+                  ) : (
+                    <div className="text-center p-4">
+                      <ImageIcon size={32} className="mx-auto text-slate-700 mb-2" />
+                      <p className="text-[8px] font-black uppercase text-slate-600 tracking-widest">No Custom Logo</p>
+                    </div>
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 size={32} className="text-blue-500 animate-spin" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="w-full space-y-4">
+                  <div className="relative">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileUpload(e, 'logo')}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      disabled={uploading}
+                    />
+                    <button className="w-full bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-600/20 transition-all">
+                      <Upload size={16} /> 
+                      {uploading ? 'Processing Architecture...' : 'Upload New Logo'}
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-center text-slate-600 font-bold uppercase tracking-[0.2em]">Transparent Background Recommended (PNG)</p>
+                </div>
+
+                {settings?.logoUrl && (
+                  <button 
+                    onClick={() => saveSettings({ logoUrl: '' })}
+                    className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:text-rose-400 transition-colors"
+                  >
+                    Reset to Default Asset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Site Config */}
+            <div className="glass p-8 rounded-3xl border border-blue-500/10">
+              <h4 className="text-[10px] uppercase font-black text-slate-500 tracking-[0.2em] mb-6">Operational Metadata</h4>
+              
+              <div className="space-y-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Official Site Name</label>
+                  <div className="flex gap-2">
+                    <input 
+                      className="flex-1 bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-blue-500 outline-none transition-all placeholder:text-slate-700" 
+                      placeholder="e.g. 3CSValeting"
+                      value={settings?.siteName || ''}
+                      onChange={(e) => setSettings(prev => ({ ...prev!, siteName: e.target.value }))}
+                    />
+                    <button 
+                      onClick={() => saveSettings({ siteName: settings?.siteName })}
+                      className="bg-slate-800 hover:bg-slate-700 text-blue-400 p-4 rounded-xl transition-all"
+                    >
+                      <Save size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

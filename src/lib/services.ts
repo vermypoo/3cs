@@ -4,12 +4,13 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Service, Review, GalleryItem } from '../types';
+import { Service, Review, GalleryItem, AppSettings } from '../types';
 import { handleFirestoreError, OperationType } from './firebase-utils';
 
 const SERVICES_COLLECTION = 'services';
 const REVIEWS_COLLECTION = 'reviews';
 const GALLERY_COLLECTION = 'gallery';
+const SETTINGS_COLLECTION = 'settings';
 
 async function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -194,5 +195,27 @@ export async function seedReviewsIfEmpty(initialReviews: any[]) {
       const review = initialReviews[i];
       await saveReview({ ...review, order: i });
     }
+  }
+}
+
+export function subscribeToSettings(callback: (settings: AppSettings | null) => void) {
+  const docRef = doc(db, SETTINGS_COLLECTION, 'global');
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as AppSettings);
+    } else {
+      callback(null);
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, `${SETTINGS_COLLECTION}/global`);
+  });
+}
+
+export async function saveSettings(settings: Partial<AppSettings>) {
+  try {
+    const docRef = doc(db, SETTINGS_COLLECTION, 'global');
+    await setDoc(docRef, settings, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `${SETTINGS_COLLECTION}/global`);
   }
 }

@@ -54,3 +54,8 @@ export interface GalleryItem {
   order: number;
   createdAt?: any;
 }
+
+export interface AppSettings {
+  logoUrl?: string;
+  siteName?: string;
+}

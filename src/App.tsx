@@ -34,11 +34,11 @@ const Tiktok = ({ size = 24, className = "" }) => (
     <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
   </svg>
 );
-import { Service, Review, GalleryItem } from './types';
+import { Service, Review, GalleryItem, AppSettings } from './types';
 import { 
   seedServicesIfEmpty, subscribeToServices, 
   subscribeToReviews, seedReviewsIfEmpty,
-  subscribeToGallery
+  subscribeToGallery, subscribeToSettings
 } from './lib/services';
 
 export default function App() {
@@ -48,6 +48,7 @@ export default function App() {
   const [services, setServices] = useState<Service[] | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
 
   useEffect(() => {
     const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com'];
@@ -75,6 +76,10 @@ export default function App() {
     const unsubGallery = subscribeToGallery((data) => {
       setGallery(data);
     });
+
+    const unsubSettings = subscribeToSettings((data) => {
+      setSettings(data);
+    });
     
     // Check initial hash for "hidden" admin access
     if (window.location.hash === '#admin-portal') {
@@ -92,6 +97,7 @@ export default function App() {
       unsubServices();
       unsubReviews();
       unsubGallery();
+      unsubSettings();
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
@@ -176,7 +182,7 @@ export default function App() {
             <div className="col-span-2">
               <div className="flex items-center gap-3 mb-8">
                 <Logo className="w-14 h-14" />
-                <span className="font-bold text-2xl tracking-tight">3CSValeting</span>
+                <span className="font-bold text-2xl tracking-tight">{settings?.siteName || '3CSValeting'}</span>
               </div>
               <p className="text-slate-500 max-w-sm mb-8 leading-relaxed text-sm">The ultimate mobile solution for car enthusiasts. Premium valeting and detailing delivered at your location with surgical precision.</p>
               <div className="flex gap-4">
