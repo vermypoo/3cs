@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { db, auth } from '../../lib/firebase';
 import { collection, query, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { Booking, BookingStatus, ServiceType, Service, Review, GalleryItem, AppSettings, FAQ, GalleryCategory } from '../../types';
+import { Booking, BookingStatus, ServiceType, Service, Review, GalleryItem, AppSettings, FAQ, GalleryCategory, Expense } from '../../types';
 import { SERVICES as INITIAL_SERVICES, FAQS as INITIAL_FAQS } from '../../constants';
 import { 
   Plus, LogOut, Check, X, Clock, RefreshCcw, 
   Trash2, PhoneCall, Filter, ExternalLink, Calendar, Phone, Mail, Package, Edit2, Save, Trash,
   MessageSquare, Star, Activity, Image as ImageIcon, Upload, Loader2, Settings as SettingsIcon, HelpCircle,
-  Tag, Eye, EyeOff
+  Tag, Eye, EyeOff, Receipt, Wallet, ArrowDownRight, ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -16,7 +16,8 @@ import {
   subscribeToGallery, saveGalleryItem, deleteGalleryItem, clearGallery,
   uploadToServer, subscribeToSettings, saveSettings,
   subscribeToFAQs, saveFAQ, deleteFAQ, seedFAQsIfEmpty,
-  subscribeToGalleryCategories, saveGalleryCategory, deleteGalleryCategory
+  subscribeToGalleryCategories, saveGalleryCategory, deleteGalleryCategory,
+  subscribeToExpenses, saveExpense, deleteExpense
 } from '../../lib/services';
 import { handleFirestoreError, OperationType } from '../../lib/firebase-utils';
 
@@ -27,12 +28,13 @@ export default function AdminDashboard() {
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [galleryCategories, setGalleryCategories] = useState<GalleryCategory[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<BookingStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'reviews' | 'gallery' | 'settings' | 'faqs'>('bookings');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'services' | 'reviews' | 'gallery' | 'settings' | 'faqs' | 'expenses'>('bookings');
 
   // New Booking State
   const [newBooking, setNewBooking] = useState({
@@ -66,6 +68,10 @@ export default function AdminDashboard() {
 
   // New/Edit Gallery State
   const [editingGalleryItem, setEditingGalleryItem] = useState<Partial<GalleryItem> | null>(null);
+  
+  // New/Edit Expense State
+  const [editingExpense, setEditingExpense] = useState<Partial<Expense> | null>(null);
+
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
 
   useEffect(() => {
@@ -108,6 +114,10 @@ export default function AdminDashboard() {
       setFaqs(data);
     });
 
+    const unsubExpenses = subscribeToExpenses((data) => {
+      setExpenses(data);
+    });
+
     return () => {
       unsubBookings();
       unsubServices();
@@ -116,6 +126,7 @@ export default function AdminDashboard() {
       unsubGalleryCategories();
       unsubSettings();
       unsubFAQs();
+      unsubExpenses();
     };
   }, []);
 
@@ -207,6 +218,29 @@ export default function AdminDashboard() {
       setEditingFAQ(null);
     } catch (e: any) {
       alert(`Error saving FAQ: ${e.message}`);
+    }
+  };
+
+  const handleSaveExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingExpense) return;
+    try {
+      await saveExpense({
+        ...editingExpense,
+        createdAt: editingExpense.createdAt ?? serverTimestamp()
+      } as Expense);
+      setEditingExpense(null);
+    } catch (e: any) {
+      alert(`Error saving expense: ${e.message}`);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!window.confirm('Verifying destruction of expense log. This cannot be undone. Proceed?')) return;
+    try {
+      await deleteExpense(id);
+    } catch (e: any) {
+      alert(`Error deleting expense: ${e.message}`);
     }
   };
 
@@ -371,6 +405,17 @@ export default function AdminDashboard() {
         return acc;
       }, 0),
     avgReviewRating: reviews.reduce((acc, r) => acc + r.rating, 0) / (reviews.length || 1),
+    totalExpenses: expenses.reduce((acc, e) => acc + e.amount, 0),
+    netRevenue: bookings
+      .filter(b => b.status === BookingStatus.COMPLETED)
+      .reduce((acc, b) => {
+        const service = services.find(s => s.id === b.serviceId);
+        if (service) {
+          const price = parseFloat(service.price.replace(/[^0-9.]/g, '')) || 0;
+          return acc + price;
+        }
+        return acc;
+      }, 0) - expenses.reduce((acc, e) => acc + e.amount, 0),
     conversionRate: bookings.length > 0 ? (bookings.filter(b => b.status === BookingStatus.COMPLETED).length / bookings.length) * 100 : 0,
     servicePopularity: services.map(s => ({
       name: s.name,
@@ -443,6 +488,12 @@ export default function AdminDashboard() {
           <HelpCircle size={14} /> Q&A
         </button>
         <button 
+          onClick={() => setActiveTab('expenses')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shrink-0 ${activeTab === 'expenses' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          <Receipt size={14} /> Financials
+        </button>
+        <button 
           onClick={() => setActiveTab('settings')}
           className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shrink-0 ${activeTab === 'settings' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-500 hover:text-slate-300'}`}
         >
@@ -453,18 +504,19 @@ export default function AdminDashboard() {
       {activeTab === 'bookings' ? (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-12">
             {[
               { label: 'Total Volume', val: stats.total, color: 'text-white' },
               { label: 'Pending', val: stats.pending, color: 'text-amber-500' },
-              { label: 'Confirmed', val: stats.confirmed, color: 'text-blue-400' },
+              { label: 'Active', val: stats.confirmed, color: 'text-blue-400' },
+              { label: 'Gross Rev.', val: `£${stats.revenue.toFixed(2)}`, color: 'text-blue-500' },
+              { label: 'Expenses', val: `£${stats.totalExpenses.toFixed(2)}`, color: 'text-rose-500' },
+              { label: 'Net Profit', val: `£${stats.netRevenue.toFixed(2)}`, color: 'text-emerald-500' },
               { label: 'Completed', val: stats.completed, color: 'text-emerald-400' },
-              { label: 'Cancelled', val: stats.cancelled, color: 'text-rose-500' },
-              { label: 'Est. Revenue', val: `£${stats.revenue.toFixed(2)}`, color: 'text-blue-500' },
             ].map((s, i) => (
               <div key={i} className="glass p-6 rounded-2xl border border-blue-500/5">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-2">{s.label}</p>
-                <p className={`text-2xl font-black font-mono ${s.color}`}>{s.val}</p>
+                <p className={`text-xl font-black font-mono ${s.color}`}>{s.val}</p>
               </div>
             ))}
           </div>
@@ -1122,7 +1174,183 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+      ) : activeTab === 'expenses' ? (
+        /* Expenses Management */
+        <div className="grid gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+             <div>
+               <h3 className="text-xl font-bold uppercase tracking-tight">Financial Outlays</h3>
+               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Deductions and operation costs log</p>
+             </div>
+             <div className="flex gap-3 w-full md:w-auto">
+               <div className="glass p-4 rounded-xl border border-blue-500/10 flex items-center gap-4">
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Gross Yield</p>
+                    <p className="text-sm font-black text-blue-500">£{stats.revenue.toFixed(2)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-slate-800"></div>
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Total Drain</p>
+                    <p className="text-sm font-black text-rose-500">-£{stats.totalExpenses.toFixed(2)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-slate-800"></div>
+                  <div>
+                    <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Net Retained</p>
+                    <p className="text-sm font-black text-emerald-500">£{stats.netRevenue.toFixed(2)}</p>
+                  </div>
+               </div>
+               <button 
+                  onClick={() => setEditingExpense({ amount: 0, description: '', category: 'Supplies', date: new Date().toISOString().split('T')[0] })}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+               >
+                  <Plus size={14} /> Log Deduction
+               </button>
+             </div>
+          </div>
+
+          <div className="hidden md:block glass rounded-3xl border border-blue-500/5 overflow-hidden">
+             <table className="w-full text-left border-collapse">
+                <thead>
+                   <tr className="border-b border-slate-800 bg-slate-900/40 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
+                      <th className="p-6">Timeline</th>
+                      <th className="p-6">Classification</th>
+                      <th className="p-6">Description / Rationale</th>
+                      <th className="p-6 text-right">Drain Amount</th>
+                      <th className="p-6 text-right">Operations</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/30">
+                   {expenses.length === 0 ? (
+                      <tr><td colSpan={5} className="p-20 text-center text-slate-600 font-bold uppercase tracking-widest text-xs">No financial deductions logged.</td></tr>
+                   ) : (
+                      expenses.map((e) => (
+                         <tr key={e.id} className="hover:bg-rose-500/[0.02] transition-colors group">
+                            <td className="p-6 text-xs font-mono text-slate-400">{e.date}</td>
+                            <td className="p-6">
+                               <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-slate-800 bg-slate-900 text-slate-500">
+                                  {e.category}
+                               </span>
+                            </td>
+                            <td className="p-6 text-sm text-slate-300 font-medium">{e.description}</td>
+                            <td className="p-6 text-right font-mono font-bold text-rose-500">-£{e.amount.toFixed(2)}</td>
+                            <td className="p-6 text-right">
+                               <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-all">
+                                  <button onClick={() => setEditingExpense(e)} className="p-2 glass text-slate-400 hover:text-white rounded-lg transition-all"><Edit2 size={14} /></button>
+                                  <button onClick={() => handleDeleteExpense(e.id!)} className="p-2 glass text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg transition-all"><Trash2 size={14} /></button>
+                               </div>
+                            </td>
+                         </tr>
+                      ))
+                   )}
+                </tbody>
+             </table>
+          </div>
+
+          <div className="md:hidden space-y-4">
+             {expenses.map((e) => (
+                <div key={e.id} className="glass p-5 rounded-2xl border border-rose-500/5">
+                   <div className="flex justify-between items-start mb-4">
+                      <div>
+                         <p className="text-[10px] font-mono text-slate-500">{e.date}</p>
+                         <h4 className="font-bold text-slate-200 mt-1">{e.description}</h4>
+                      </div>
+                      <p className="font-black text-rose-500">-£{e.amount.toFixed(2)}</p>
+                   </div>
+                   <div className="flex justify-between items-center">
+                      <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-slate-900 text-slate-600">{e.category}</span>
+                      <div className="flex gap-2">
+                         <button onClick={() => setEditingExpense(e)} className="p-2 glass text-slate-400 rounded-lg"><Edit2 size={14} /></button>
+                         <button onClick={() => handleDeleteExpense(e.id!)} className="p-2 glass text-rose-500 rounded-lg"><Trash2 size={14} /></button>
+                      </div>
+                   </div>
+                </div>
+             ))}
+          </div>
+        </div>
       ) : null}
+
+      {/* Expense Edit Modal */}
+      <AnimatePresence>
+        {editingExpense && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="glass border-rose-500/10 p-10 rounded-[2.5rem] w-full max-w-lg relative"
+            >
+              <div className="absolute top-0 right-0 p-8">
+                <button onClick={() => setEditingExpense(null)} className="text-slate-500 hover:text-white transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mb-10">
+                <h2 className="text-3xl font-extrabold tracking-tight uppercase flex items-center gap-3">
+                   <Wallet size={28} className="text-rose-500" />
+                   {editingExpense.id ? 'Refine Deduction' : 'Log Deduction'}
+                </h2>
+                <p className="text-slate-500 text-sm font-medium">Capture operational cost drain</p>
+              </div>
+              
+              <form onSubmit={handleSaveExpense} className="space-y-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Amount (£)</label>
+                  <div className="relative">
+                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">£</span>
+                     <input 
+                        required 
+                        type="number" 
+                        step="0.01"
+                        className="w-full bg-slate-900/60 border border-slate-800 rounded-xl py-4 pl-8 pr-4 text-sm font-medium focus:border-rose-500 outline-none transition-all" 
+                        placeholder="0.00" 
+                        value={editingExpense.amount || ''} 
+                        onChange={e => setEditingExpense({...editingExpense, amount: parseFloat(e.target.value)})} 
+                     />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Classification</label>
+                  <select 
+                     required 
+                     className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all appearance-none cursor-pointer" 
+                     value={editingExpense.category || 'Supplies'} 
+                     onChange={e => setEditingExpense({...editingExpense, category: e.target.value})}
+                  >
+                     {['Supplies', 'Fuel', 'Maintenance', 'Marketing', 'Utilities', 'Taxes', 'Other'].map(cat => (
+                        <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                     ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Incident Date</label>
+                  <input 
+                     required 
+                     type="date" 
+                     className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all" 
+                     value={editingExpense.date || ''} 
+                     onChange={e => setEditingExpense({...editingExpense, date: e.target.value})} 
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Rationale / Description</label>
+                  <textarea 
+                    required
+                    className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all resize-none h-24" 
+                    placeholder="Provide justification for this drain..." 
+                    value={editingExpense.description || ''} 
+                    onChange={e => setEditingExpense({...editingExpense, description: e.target.value})} 
+                  />
+                </div>
+                <button type="submit" className="w-full bg-rose-600 text-white font-bold rounded-2xl py-5 mt-4 group hover:bg-rose-500 transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-lg shadow-rose-600/20">
+                  {editingExpense.id ? 'Confirm Correction' : 'Finalise Deduction'}
+                  <Receipt size={16} className="group-hover:translate-y-px transition-transform" />
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Modal */}
       <AnimatePresence>

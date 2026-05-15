@@ -4,7 +4,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Service, Review, GalleryItem, AppSettings, FAQ, GalleryCategory } from '../types';
+import { Service, Review, GalleryItem, AppSettings, FAQ, GalleryCategory, Expense } from '../types';
 import { handleFirestoreError, OperationType } from './firebase-utils';
 
 const SERVICES_COLLECTION = 'services';
@@ -13,6 +13,7 @@ const GALLERY_COLLECTION = 'gallery';
 const SETTINGS_COLLECTION = 'settings';
 const FAQS_COLLECTION = 'faqs';
 const GALLERY_CATEGORIES_COLLECTION = 'gallery_categories';
+const EXPENSES_COLLECTION = 'expenses';
 
 async function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -294,6 +295,39 @@ export async function deleteGalleryCategory(id: string) {
   const path = `${GALLERY_CATEGORIES_COLLECTION}/${id}`;
   try {
     await deleteDoc(doc(db, GALLERY_CATEGORIES_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export function subscribeToExpenses(callback: (expenses: Expense[]) => void) {
+  const q = query(collection(db, EXPENSES_COLLECTION), orderBy('date', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const expenses = snapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    } as Expense));
+    callback(expenses);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, EXPENSES_COLLECTION);
+  });
+}
+
+export async function saveExpense(expense: Partial<Expense> & { id?: string }) {
+  const { id, ...data } = expense;
+  const path = id ? `${EXPENSES_COLLECTION}/${id}` : `${EXPENSES_COLLECTION}`;
+  try {
+    const docRef = id ? doc(db, EXPENSES_COLLECTION, id) : doc(collection(db, EXPENSES_COLLECTION));
+    await setDoc(docRef, { ...data, createdAt: data.createdAt ?? serverTimestamp() }, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteExpense(id: string) {
+  const path = `${EXPENSES_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, EXPENSES_COLLECTION, id));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }

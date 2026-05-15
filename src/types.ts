@@ -74,6 +74,15 @@ export interface FAQ {
   isVisible?: boolean;
 }
 
+export interface Expense {
+  id?: string;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  createdAt: any;
+}
+
 export interface AppSettings {
   logoUrl?: string;
   siteName?: string;
