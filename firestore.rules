@@ -84,6 +84,7 @@ service cloud.firestore {
              data.description is string && data.description.size() <= 1000 &&
              data.category is string && data.category.size() <= 200 &&
              data.date is string &&
+             data.type in ['gain', 'expense'] &&
              (data.createdAt == request.time || data.createdAt != null);
     }
 

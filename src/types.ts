@@ -80,6 +80,7 @@ export interface Expense {
   description: string;
   category: string;
   date: string;
+  type: 'gain' | 'expense';
   createdAt: any;
 }
 

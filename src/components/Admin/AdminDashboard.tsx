@@ -403,10 +403,10 @@ export default function AdminDashboard() {
           return acc + price;
         }
         return acc;
-      }, 0),
+      }, 0) + expenses.filter(e => e.type === 'gain').reduce((acc, e) => acc + e.amount, 0),
+    totalExpenses: expenses.filter(e => e.type === 'expense').reduce((acc, e) => acc + e.amount, 0),
     avgReviewRating: reviews.reduce((acc, r) => acc + r.rating, 0) / (reviews.length || 1),
-    totalExpenses: expenses.reduce((acc, e) => acc + e.amount, 0),
-    netRevenue: bookings
+    netRevenue: (bookings
       .filter(b => b.status === BookingStatus.COMPLETED)
       .reduce((acc, b) => {
         const service = services.find(s => s.id === b.serviceId);
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
           return acc + price;
         }
         return acc;
-      }, 0) - expenses.reduce((acc, e) => acc + e.amount, 0),
+      }, 0) + expenses.filter(e => e.type === 'gain').reduce((acc, e) => acc + e.amount, 0)) - expenses.filter(e => e.type === 'expense').reduce((acc, e) => acc + e.amount, 0),
     conversionRate: bookings.length > 0 ? (bookings.filter(b => b.status === BookingStatus.COMPLETED).length / bookings.length) * 100 : 0,
     servicePopularity: services.map(s => ({
       name: s.name,
@@ -1179,10 +1179,10 @@ export default function AdminDashboard() {
         <div className="grid gap-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
              <div>
-               <h3 className="text-xl font-bold uppercase tracking-tight">Financial Outlays</h3>
-               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Deductions and operation costs log</p>
+               <h3 className="text-xl font-bold uppercase tracking-tight">Financial Flow</h3>
+               <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Gains, deductions and operation costs log</p>
              </div>
-             <div className="flex gap-3 w-full md:w-auto">
+             <div className="flex flex-wrap gap-3 w-full md:w-auto">
                <div className="glass p-4 rounded-xl border border-blue-500/10 flex items-center gap-4">
                   <div>
                     <p className="text-[8px] uppercase tracking-widest text-slate-500 font-black">Gross Yield</p>
@@ -1199,12 +1199,20 @@ export default function AdminDashboard() {
                     <p className="text-sm font-black text-emerald-500">£{stats.netRevenue.toFixed(2)}</p>
                   </div>
                </div>
-               <button 
-                  onClick={() => setEditingExpense({ amount: 0, description: '', category: 'Supplies', date: new Date().toISOString().split('T')[0] })}
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
-               >
-                  <Plus size={14} /> Log Deduction
-               </button>
+               <div className="flex gap-2">
+                 <button 
+                    onClick={() => setEditingExpense({ type: 'gain', amount: 0, description: '', category: 'Extra Service', date: new Date().toISOString().split('T')[0] })}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                 >
+                    <ArrowUpRight size={14} /> Log Gain
+                 </button>
+                 <button 
+                    onClick={() => setEditingExpense({ type: 'expense', amount: 0, description: '', category: 'Supplies', date: new Date().toISOString().split('T')[0] })}
+                    className="bg-rose-600 hover:bg-rose-500 text-white px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20"
+                 >
+                    <ArrowDownRight size={14} /> Log Deduction
+                 </button>
+               </div>
              </div>
           </div>
 
@@ -1213,26 +1221,35 @@ export default function AdminDashboard() {
                 <thead>
                    <tr className="border-b border-slate-800 bg-slate-900/40 text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black">
                       <th className="p-6">Timeline</th>
+                      <th className="p-6">Type</th>
                       <th className="p-6">Classification</th>
                       <th className="p-6">Description / Rationale</th>
-                      <th className="p-6 text-right">Drain Amount</th>
+                      <th className="p-6 text-right">Amount</th>
                       <th className="p-6 text-right">Operations</th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/30">
                    {expenses.length === 0 ? (
-                      <tr><td colSpan={5} className="p-20 text-center text-slate-600 font-bold uppercase tracking-widest text-xs">No financial deductions logged.</td></tr>
+                      <tr><td colSpan={6} className="p-20 text-center text-slate-600 font-bold uppercase tracking-widest text-xs">No financial records logged.</td></tr>
                    ) : (
                       expenses.map((e) => (
-                         <tr key={e.id} className="hover:bg-rose-500/[0.02] transition-colors group">
+                         <tr key={e.id} className={`transition-colors group ${e.type === 'gain' ? 'hover:bg-emerald-500/[0.02]' : 'hover:bg-rose-500/[0.02]'}`}>
                             <td className="p-6 text-xs font-mono text-slate-400">{e.date}</td>
+                            <td className="p-6">
+                               <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${e.type === 'gain' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                  {e.type === 'gain' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                  {e.type}
+                               </div>
+                            </td>
                             <td className="p-6">
                                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-slate-800 bg-slate-900 text-slate-500">
                                   {e.category}
                                </span>
                             </td>
                             <td className="p-6 text-sm text-slate-300 font-medium">{e.description}</td>
-                            <td className="p-6 text-right font-mono font-bold text-rose-500">-£{e.amount.toFixed(2)}</td>
+                            <td className={`p-6 text-right font-mono font-bold ${e.type === 'gain' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                               {e.type === 'gain' ? '+' : '-'}£{e.amount.toFixed(2)}
+                            </td>
                             <td className="p-6 text-right">
                                <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-all">
                                   <button onClick={() => setEditingExpense(e)} className="p-2 glass text-slate-400 hover:text-white rounded-lg transition-all"><Edit2 size={14} /></button>
@@ -1248,13 +1265,18 @@ export default function AdminDashboard() {
 
           <div className="md:hidden space-y-4">
              {expenses.map((e) => (
-                <div key={e.id} className="glass p-5 rounded-2xl border border-rose-500/5">
+                <div key={e.id} className={`glass p-5 rounded-2xl border ${e.type === 'gain' ? 'border-emerald-500/5' : 'border-rose-500/5'}`}>
                    <div className="flex justify-between items-start mb-4">
                       <div>
-                         <p className="text-[10px] font-mono text-slate-500">{e.date}</p>
+                         <div className="flex items-center gap-2">
+                           <p className="text-[10px] font-mono text-slate-500">{e.date}</p>
+                           <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${e.type === 'gain' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>{e.type}</span>
+                         </div>
                          <h4 className="font-bold text-slate-200 mt-1">{e.description}</h4>
                       </div>
-                      <p className="font-black text-rose-500">-£{e.amount.toFixed(2)}</p>
+                      <p className={`font-black ${e.type === 'gain' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {e.type === 'gain' ? '+' : '-'}£{e.amount.toFixed(2)}
+                      </p>
                    </div>
                    <div className="flex justify-between items-center">
                       <span className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-slate-900 text-slate-600">{e.category}</span>
@@ -1287,13 +1309,32 @@ export default function AdminDashboard() {
 
               <div className="mb-10">
                 <h2 className="text-3xl font-extrabold tracking-tight uppercase flex items-center gap-3">
-                   <Wallet size={28} className="text-rose-500" />
-                   {editingExpense.id ? 'Refine Deduction' : 'Log Deduction'}
+                   <Wallet size={28} className={editingExpense.type === 'gain' ? 'text-emerald-500' : 'text-rose-500'} />
+                   {editingExpense.id ? (editingExpense.type === 'gain' ? 'Refine Gain' : 'Refine Deduction') : (editingExpense.type === 'gain' ? 'Log Gain' : 'Log Deduction')}
                 </h2>
-                <p className="text-slate-500 text-sm font-medium">Capture operational cost drain</p>
+                <p className="text-slate-500 text-sm font-medium">Record financial {editingExpense.type === 'gain' ? 'intake' : 'drain'}</p>
               </div>
               
               <form onSubmit={handleSaveExpense} className="space-y-6">
+                <div className="flex justify-center mb-6">
+                   <div className="flex p-1 bg-slate-900 rounded-2xl border border-slate-800">
+                      <button 
+                         type="button"
+                         onClick={() => setEditingExpense({...editingExpense, type: 'gain'})}
+                         className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${editingExpense.type === 'gain' ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                         Gain
+                      </button>
+                      <button 
+                         type="button"
+                         onClick={() => setEditingExpense({...editingExpense, type: 'expense'})}
+                         className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${editingExpense.type === 'expense' ? 'bg-rose-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                         Deduction
+                      </button>
+                   </div>
+                </div>
+
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Amount (£)</label>
                   <div className="relative">
@@ -1302,7 +1343,7 @@ export default function AdminDashboard() {
                         required 
                         type="number" 
                         step="0.01"
-                        className="w-full bg-slate-900/60 border border-slate-800 rounded-xl py-4 pl-8 pr-4 text-sm font-medium focus:border-rose-500 outline-none transition-all" 
+                        className={`w-full bg-slate-900/60 border border-slate-800 rounded-xl py-4 pl-8 pr-4 text-sm font-medium outline-none transition-all ${editingExpense.type === 'gain' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`}
                         placeholder="0.00" 
                         value={editingExpense.amount || ''} 
                         onChange={e => setEditingExpense({...editingExpense, amount: parseFloat(e.target.value)})} 
@@ -1313,13 +1354,19 @@ export default function AdminDashboard() {
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Classification</label>
                   <select 
                      required 
-                     className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all appearance-none cursor-pointer" 
-                     value={editingExpense.category || 'Supplies'} 
+                     className={`w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium outline-none transition-all appearance-none cursor-pointer ${editingExpense.type === 'gain' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`} 
+                     value={editingExpense.category || (editingExpense.type === 'gain' ? 'Extra Service' : 'Supplies')} 
                      onChange={e => setEditingExpense({...editingExpense, category: e.target.value})}
                   >
-                     {['Supplies', 'Fuel', 'Maintenance', 'Marketing', 'Utilities', 'Taxes', 'Other'].map(cat => (
-                        <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
-                     ))}
+                     {editingExpense.type === 'gain' ? (
+                        ['Extra Service', 'Tip', 'Product Sale', 'Custom Project', 'Referral Bonus', 'Other'].map(cat => (
+                           <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                        ))
+                     ) : (
+                        ['Supplies', 'Fuel', 'Maintenance', 'Marketing', 'Utilities', 'Taxes', 'Other'].map(cat => (
+                           <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
+                        ))
+                     )}
                   </select>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -1327,7 +1374,7 @@ export default function AdminDashboard() {
                   <input 
                      required 
                      type="date" 
-                     className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all" 
+                     className={`w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium outline-none transition-all ${editingExpense.type === 'gain' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`} 
                      value={editingExpense.date || ''} 
                      onChange={e => setEditingExpense({...editingExpense, date: e.target.value})} 
                   />
@@ -1336,14 +1383,14 @@ export default function AdminDashboard() {
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Rationale / Description</label>
                   <textarea 
                     required
-                    className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-rose-500 outline-none transition-all resize-none h-24" 
-                    placeholder="Provide justification for this drain..." 
+                    className={`w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium outline-none transition-all resize-none h-24 ${editingExpense.type === 'gain' ? 'focus:border-emerald-500' : 'focus:border-rose-500'}`} 
+                    placeholder="Provide justification for this record..." 
                     value={editingExpense.description || ''} 
                     onChange={e => setEditingExpense({...editingExpense, description: e.target.value})} 
                   />
                 </div>
-                <button type="submit" className="w-full bg-rose-600 text-white font-bold rounded-2xl py-5 mt-4 group hover:bg-rose-500 transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-lg shadow-rose-600/20">
-                  {editingExpense.id ? 'Confirm Correction' : 'Finalise Deduction'}
+                <button type="submit" className={`w-full text-white font-bold rounded-2xl py-5 mt-4 group transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-lg ${editingExpense.type === 'gain' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/20'}`}>
+                  {editingExpense.id ? 'Confirm Correction' : 'Finalise Entry'}
                   <Receipt size={16} className="group-hover:translate-y-px transition-transform" />
                 </button>
               </form>
