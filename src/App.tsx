@@ -45,11 +45,19 @@ import {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLoading, setShowLoading] = useState(true);
   const [isAdminView, setIsAdminView] = useState(false);
   const [services, setServices] = useState<Service[] | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!authLoading) setShowLoading(false);
+    }, 2000); // Ensure verification screen stays for at least 2s for aesthetic/UX
+    return () => clearTimeout(timer);
+  }, [authLoading]);
 
   useEffect(() => {
     const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com'];
@@ -103,7 +111,7 @@ export default function App() {
     };
   }, []);
 
-  if (authLoading) {
+  if (showLoading) {
     return (
       <div className="h-screen bg-slate-background flex flex-col items-center justify-center p-6 text-center">
         <motion.div
@@ -115,19 +123,50 @@ export default function App() {
           <Logo className="w-24 h-24 relative z-10" />
         </motion.div>
         
-        <div className="space-y-4 max-w-xs w-full">
-           <div className="h-0.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
-              <motion.div 
-                initial={{ left: '-100%' }}
-                animate={{ left: '100%' }}
-                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-500 to-transparent"
-              />
+        <div className="space-y-6 max-w-sm w-full bg-slate-900/50 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl">
+           <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center relative overflow-hidden group">
+                <motion.div 
+                  className="absolute inset-0 bg-blue-500/10"
+                  animate={{ 
+                    opacity: [0.1, 0.3, 0.1],
+                  }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                />
+                <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-white text-lg font-bold tracking-tight">Verifying your connection</h1>
+                <p className="text-slate-500 text-[10px] font-medium uppercase tracking-widest">{settings?.siteName || '3CSValeting'} is reviewing the security of your connection.</p>
+              </div>
            </div>
-           <div className="animate-pulse">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Establishing Secure Session</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-700 mt-2">Checking Browser Integrity</p>
+
+           <div className="h-px w-full bg-slate-800/50" />
+
+           <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Secure Environment</span>
+              </div>
+              <span className="text-[9px] font-mono text-slate-600">ID: {Math.random().toString(36).substring(7).toUpperCase()}</span>
            </div>
+
+           <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3 flex items-center gap-3">
+             <div className="w-5 h-5 rounded border border-blue-500/20 flex items-center justify-center bg-blue-500/10">
+               <motion.div 
+                 initial={{ scale: 0 }}
+                 animate={{ scale: 1 }}
+                 transition={{ delay: 0.5 }}
+               >
+                 <CheckCircle2 size={12} className="text-blue-500" />
+               </motion.div>
+             </div>
+             <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-blue-500/80">Browser Integrity Confirmed</p>
+           </div>
+        </div>
+
+        <div className="mt-8">
+           <p className="text-[8px] font-bold uppercase tracking-[0.5em] text-slate-700">Protected by Cloudflare & 3CS Security</p>
         </div>
       </div>
     );
