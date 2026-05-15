@@ -53,3 +53,21 @@ export const REVIEWS = [
   }
 ];
 
+export const FAQS = [
+  {
+    question: "Do you come to my location?",
+    answer: "Yes! We are a 100% mobile service. We provide valeting and detailing at your home or workplace in Aylesbury and surrounding areas.",
+    order: 0
+  },
+  {
+    question: "Do you need access to water or electricity?",
+    answer: "We carry our own professional equipment, but having access to a standard electrical socket and an outdoor tap is preferred for the best possible results. However, please let us know if neither is available so we can prepare accordingly.",
+    order: 1
+  },
+  {
+    question: "How long does a full valet take?",
+    answer: "A full valet typically takes between 3 to 4 hours, depending on the condition and size of the vehicle. We take our time to ensure every detail is perfect.",
+    order: 2
+  }
+];
+

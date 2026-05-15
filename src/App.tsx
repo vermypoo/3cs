@@ -12,9 +12,10 @@ import Services from './components/Services';
 import Gallery from './components/Gallery';
 import BookingForm from './components/BookingForm';
 import Reviews from './components/Reviews';
+import FAQ from './components/FAQ';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
-import { CONTACT_INFO, SERVICES as INITIAL_SERVICES, REVIEWS as INITIAL_REVIEWS } from './constants';
+import { CONTACT_INFO, SERVICES as INITIAL_SERVICES, REVIEWS as INITIAL_REVIEWS, FAQS as INITIAL_FAQS } from './constants';
 import { Instagram, Facebook, Phone, Mail, MapPin, CheckCircle2, RefreshCcw } from 'lucide-react';
 import Logo from './components/Logo';
 import { motion } from 'motion/react';
@@ -35,11 +36,13 @@ const Tiktok = ({ size = 24, className = "" }) => (
     <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
   </svg>
 );
-import { Service, Review, GalleryItem, AppSettings } from './types';
+import { Service, Review, GalleryItem, AppSettings, FAQ as FAQType, GalleryCategory } from './types';
 import { 
   seedServicesIfEmpty, subscribeToServices, 
   subscribeToReviews, seedReviewsIfEmpty,
-  subscribeToGallery, subscribeToSettings
+  subscribeToGallery, subscribeToSettings,
+  subscribeToFAQs, seedFAQsIfEmpty,
+  subscribeToGalleryCategories
 } from './lib/services';
 
 import { Turnstile } from '@marsidev/react-turnstile';
@@ -54,7 +57,9 @@ export default function App() {
   const [isAdminView, setIsAdminView] = useState(false);
   const [services, setServices] = useState<Service[] | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [faqs, setFaqs] = useState<FAQType[]>([]);
   const [gallery, setGallery] = useState<GalleryItem[]>([]);
+  const [galleryCategories, setGalleryCategories] = useState<GalleryCategory[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
 
   // Use Cloudflare Testing Key (Always Passes)
@@ -63,13 +68,27 @@ export default function App() {
 
   useEffect(() => {
     // We only hide the loading screen if both auth is ready AND the turnstile token is received
+    // Or if we hit a safety timeout (15 seconds) to prevent permanent lockouts
+    const safetyTimeout = setTimeout(() => {
+      if (!authLoading && !verifiedToken) {
+        console.warn('Cloudflare Turnstile safety timeout reached. Proceeding to site.');
+        setShowLoading(false);
+      }
+    }, 15000);
+
     if (!authLoading && verifiedToken) {
       const timer = setTimeout(() => {
         setShowLoading(false);
       }, 1000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(safetyTimeout);
+      };
     }
-  }, [authLoading, verifiedToken]);
+    return () => {
+      clearTimeout(safetyTimeout);
+    };
+  }, [authLoading, verifiedToken, showLoading]);
 
   const handleTurnstileSuccess = (token: string) => {
     setVerifiedToken(token);
@@ -88,6 +107,7 @@ export default function App() {
       if (u && u.email && authorizedEmails.includes(u.email.toLowerCase())) {
         seedServicesIfEmpty(INITIAL_SERVICES);
         seedReviewsIfEmpty(INITIAL_REVIEWS);
+        seedFAQsIfEmpty(INITIAL_FAQS);
       }
     });
 
@@ -100,8 +120,16 @@ export default function App() {
       setReviews(data);
     });
 
+    const unsubFAQs = subscribeToFAQs((data) => {
+      setFaqs(data);
+    });
+
     const unsubGallery = subscribeToGallery((data) => {
       setGallery(data);
+    });
+
+    const unsubGalleryCategories = subscribeToGalleryCategories((data) => {
+      setGalleryCategories(data);
     });
 
     const unsubSettings = subscribeToSettings((data) => {
@@ -123,7 +151,9 @@ export default function App() {
       unsubscribe();
       unsubServices();
       unsubReviews();
+      unsubFAQs();
       unsubGallery();
+      unsubGalleryCategories();
       unsubSettings();
       window.removeEventListener('hashchange', handleHashChange);
     };
@@ -259,8 +289,9 @@ export default function App() {
       <Navbar />
       <Hero />
       <Services availableServices={services || []} />
-      <Gallery items={gallery} />
+      <Gallery items={gallery} categories={galleryCategories} />
       <Reviews reviews={reviews} />
+      <FAQ faqs={faqs} />
       
       <section className="py-24 bg-slate-900/40 border-y border-slate-800" id="about">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 grid md:grid-cols-2 gap-16 items-center">
@@ -324,6 +355,7 @@ export default function App() {
               <h4 className="font-bold uppercase text-[10px] tracking-[0.3em] text-slate-600 mb-8">Navigation</h4>
               <ul className="space-y-4 text-xs font-bold uppercase tracking-widest text-slate-400">
                 <li><a href="#services" className="hover:text-blue-400">Services</a></li>
+                <li><a href="#faq" className="hover:text-blue-400">Q&A</a></li>
                 <li><a href="#booking-section" className="hover:text-blue-400">Book Online</a></li>
                 <li><a href="#about" className="hover:text-blue-400">Our Story</a></li>
                 <li>

@@ -45,7 +45,8 @@ service cloud.firestore {
              data.price is string && data.price.size() <= 100 &&
              data.duration is string && data.duration.size() <= 200 &&
              (data.image == null || (data.image is string && data.image.size() <= 1500000)) &&
-             data.order is number;
+             data.order is number &&
+             (data.isVisible == null || data.isVisible is bool);
     }
 
     function isValidReview(data) {
@@ -53,13 +54,29 @@ service cloud.firestore {
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
              data.content is string && data.content.size() <= 3000 &&
              (data.date == null || (data.date is string && data.date.size() <= 200)) &&
-             data.order is number;
+             data.order is number &&
+             (data.isVisible == null || data.isVisible is bool);
     }
 
     function isValidGalleryItem(data) {
       return data.url is string && data.url.size() <= 1500000 &&
              (data.caption == null || (data.caption is string && data.caption.size() <= 1000)) &&
-             data.order is number;
+             (data.categoryId == null || (data.categoryId is string && data.categoryId.size() <= 128)) &&
+             data.order is number &&
+             (data.isVisible == null || data.isVisible is bool);
+    }
+
+    function isValidGalleryCategory(data) {
+      return data.name is string && data.name.size() <= 200 &&
+             data.order is number &&
+             (data.isVisible == null || data.isVisible is bool);
+    }
+
+    function isValidFAQ(data) {
+      return data.question is string && data.question.size() <= 1000 &&
+             data.answer is string && data.answer.size() <= 5000 &&
+             data.order is number &&
+             (data.isVisible == null || data.isVisible is bool);
     }
 
     match /bookings/{bookingId} {
@@ -84,8 +101,19 @@ service cloud.firestore {
 
     match /gallery/{itemId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidId(itemId) && isValidGalleryItem(request.resource.data);
-      allow update: if isAdmin() && isValidId(itemId) && isValidGalleryItem(request.resource.data);
+      allow create, update: if isAdmin() && isValidId(itemId) && isValidGalleryItem(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /gallery_categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(categoryId) && isValidGalleryCategory(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(faqId) && isValidFAQ(request.resource.data);
       allow delete: if isAdmin();
     }
 

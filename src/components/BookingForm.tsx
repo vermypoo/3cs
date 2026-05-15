@@ -11,6 +11,7 @@ interface BookingFormProps {
 }
 
 export default function BookingForm({ availableServices }: BookingFormProps) {
+  const visibleServices = availableServices.filter(s => s.isVisible !== false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,10 +26,10 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
   });
 
   React.useEffect(() => {
-    if (availableServices.length > 0 && !formData.serviceId) {
-      setFormData(prev => ({ ...prev, serviceId: availableServices[0].id }));
+    if (visibleServices.length > 0 && !formData.serviceId) {
+      setFormData(prev => ({ ...prev, serviceId: visibleServices[0].id }));
     }
-  }, [availableServices]);
+  }, [visibleServices]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +50,7 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
         email: '',
         phone: '',
         carModel: '',
-        serviceId: availableServices[0]?.id || '',
+        serviceId: visibleServices[0]?.id || '',
         date: '',
         time: '',
         notes: '',
@@ -100,16 +101,20 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
             </div>
             
             <div className="space-y-4">
-              {availableServices.slice(0, 3).map((service, i) => (
+              {visibleServices.slice(0, 3).map((service, i) => (
                 <div key={i} className="glass p-5 rounded-xl border border-slate-800 transition-all cursor-default service-card-hover">
                   <div className="flex justify-between items-start mb-1">
                     <h3 className="font-bold text-white text-sm uppercase tracking-tight">{service.name}</h3>
                     <span className="text-blue-400 font-mono text-sm font-bold">{service.price}</span>
                   </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock size={10} className="text-slate-500" />
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{service.duration}</span>
+                  </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{service.description}</p>
                 </div>
               ))}
-              {availableServices.length === 0 && (
+              {visibleServices.length === 0 && (
                  <p className="text-slate-500 text-sm font-medium">Synchronizing elite services...</p>
               )}
             </div>
@@ -189,8 +194,8 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
                   onChange={e => setFormData({...formData, serviceId: e.target.value})}
                 >
                   <option value="" disabled>Select a service</option>
-                  {availableServices.map(s => (
-                    <option key={s.id} value={s.id} className="bg-slate-900">{s.name} ({s.price})</option>
+                  {visibleServices.map(s => (
+                    <option key={s.id} value={s.id} className="bg-slate-900">{s.name} - {s.price} ({s.duration})</option>
                   ))}
                 </select>
               </div>

@@ -1,12 +1,15 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Service } from '../types';
+import { Clock } from 'lucide-react';
 
 interface ServicesProps {
   availableServices: Service[];
 }
 
 export default function Services({ availableServices }: ServicesProps) {
+  const visibleServices = availableServices.filter(s => s.isVisible !== false);
+
   return (
     <section className="py-24 bg-slate-background text-white" id="services">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +23,7 @@ export default function Services({ availableServices }: ServicesProps) {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {availableServices.map((service, index) => (
+          {visibleServices.map((service, index) => (
             <motion.div 
               key={service.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -41,7 +44,13 @@ export default function Services({ availableServices }: ServicesProps) {
               </div>
               <div className="mb-4">
                 <h3 className="text-lg font-bold uppercase tracking-tight text-white group-hover:text-blue-400 transition-colors">{service.name}</h3>
-                <span className="block text-blue-400 font-mono font-bold text-base mt-0.5">{service.price}</span>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="text-blue-400 font-mono font-bold text-base">{service.price}</span>
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <Clock size={12} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{service.duration}</span>
+                  </div>
+                </div>
               </div>
               <p className="text-slate-400 text-xs mb-6 leading-relaxed min-h-[3.5rem]">{service.description}</p>
               

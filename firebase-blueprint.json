@@ -73,10 +73,32 @@
       "properties": {
         "url": { "type": "string", "description": "URL of the image" },
         "caption": { "type": "string", "description": "Short description of the photo" },
+        "categoryId": { "type": "string", "description": "ID of the gallery category" },
         "order": { "type": "number", "description": "Display order" },
         "createdAt": { "type": "string", "format": "date-time", "description": "When it was added" }
       },
       "required": ["url", "order", "createdAt"]
+    },
+    "GalleryCategory": {
+      "title": "Gallery Category",
+      "description": "A category for gallery images.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the category" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["name", "order"]
+    },
+    "FAQ": {
+      "title": "FAQ",
+      "description": "A frequently asked question and its answer.",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string", "description": "The question being asked" },
+        "answer": { "type": "string", "description": "The provided answer" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["question", "answer", "order"]
     }
   },
   "firestore": {
@@ -95,6 +117,14 @@
     "gallery/{itemId}": {
       "schema": "GalleryItem",
       "description": "Collection of gallery images"
+    },
+    "gallery_categories/{categoryId}": {
+      "schema": "GalleryCategory",
+      "description": "Collection of gallery categories"
+    },
+    "faqs/{faqId}": {
+      "schema": "FAQ",
+      "description": "Collection of frequently asked questions"
     },
     "settings/{settingId}": {
       "schema": "Settings",

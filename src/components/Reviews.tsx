@@ -10,7 +10,9 @@ interface ReviewsProps {
 export default function Reviews({ reviews }: ReviewsProps) {
   const [expandedId, setExpandedId] = React.useState<string | number | null>(null);
 
-  if (!reviews || reviews.length === 0) return null;
+  const visibleReviews = reviews.filter(r => r.isVisible !== false);
+
+  if (!visibleReviews || visibleReviews.length === 0) return null;
 
   return (
     <section className="py-24 bg-slate-950" id="reviews">
@@ -33,7 +35,7 @@ export default function Reviews({ reviews }: ReviewsProps) {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-          {reviews.map((review, i) => {
+          {visibleReviews.map((review, i) => {
             const isExpanded = expandedId === (review.id || i);
             const isLong = review.content.length > 150;
 

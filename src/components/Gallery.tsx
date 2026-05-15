@@ -1,14 +1,24 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Camera, ChevronRight } from 'lucide-react';
-import { GalleryItem } from '../types';
+import { GalleryItem, GalleryCategory } from '../types';
 
 interface GalleryProps {
   items: GalleryItem[];
+  categories: GalleryCategory[];
 }
 
-export default function Gallery({ items }: GalleryProps) {
-  if (items.length === 0) return null;
+export default function Gallery({ items, categories }: GalleryProps) {
+  const [activeCategory, setActiveCategory] = React.useState<string | 'all'>('all');
+
+  const visibleCategories = categories.filter(cat => cat.isVisible !== false);
+  const visibleItems = items.filter(item => item.isVisible !== false);
+
+  if (visibleItems.length === 0) return null;
+
+  const filteredItems = activeCategory === 'all' 
+    ? visibleItems 
+    : visibleItems.filter(item => item.categoryId === activeCategory);
 
   return (
     <section className="py-24 bg-slate-background overflow-hidden" id="gallery">
@@ -44,16 +54,47 @@ export default function Gallery({ items }: GalleryProps) {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {items.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              className="group relative h-[450px] rounded-[2.5rem] overflow-hidden glass border-blue-500/10"
+        {visibleCategories.length > 0 && (
+          <div className="flex flex-wrap gap-4 mb-12">
+            <button
+              onClick={() => setActiveCategory('all')}
+              className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeCategory === 'all' 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                  : 'bg-slate-900/50 text-slate-500 border border-slate-800 hover:border-slate-700'
+              }`}
             >
+              All Work
+            </button>
+            {visibleCategories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id!)}
+                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeCategory === cat.id 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
+                    : 'bg-slate-900/50 text-slate-500 border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <AnimatePresence mode="popLayout">
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="group relative h-[450px] rounded-[2.5rem] overflow-hidden glass border-blue-500/10"
+              >
               <img 
                 src={item.url} 
                 alt={item.caption || "Service Result"} 
@@ -68,6 +109,7 @@ export default function Gallery({ items }: GalleryProps) {
               </div>
             </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       </div>
     </section>

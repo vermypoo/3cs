@@ -4,13 +4,15 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Service, Review, GalleryItem, AppSettings } from '../types';
+import { Service, Review, GalleryItem, AppSettings, FAQ, GalleryCategory } from '../types';
 import { handleFirestoreError, OperationType } from './firebase-utils';
 
 const SERVICES_COLLECTION = 'services';
 const REVIEWS_COLLECTION = 'reviews';
 const GALLERY_COLLECTION = 'gallery';
 const SETTINGS_COLLECTION = 'settings';
+const FAQS_COLLECTION = 'faqs';
+const GALLERY_CATEGORIES_COLLECTION = 'gallery_categories';
 
 async function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -217,5 +219,82 @@ export async function saveSettings(settings: Partial<AppSettings>) {
     await setDoc(docRef, settings, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, `${SETTINGS_COLLECTION}/global`);
+  }
+}
+
+export function subscribeToFAQs(callback: (faqs: FAQ[]) => void) {
+  const q = query(collection(db, FAQS_COLLECTION), orderBy('order', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    const faqs = snapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    } as FAQ));
+    callback(faqs);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, FAQS_COLLECTION);
+  });
+}
+
+export async function saveFAQ(faq: Partial<FAQ> & { id?: string }) {
+  const { id, ...data } = faq;
+  const path = id ? `${FAQS_COLLECTION}/${id}` : `${FAQS_COLLECTION}`;
+  try {
+    const docRef = id ? doc(db, FAQS_COLLECTION, id) : doc(collection(db, FAQS_COLLECTION));
+    await setDoc(docRef, data, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteFAQ(id: string) {
+  const path = `${FAQS_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, FAQS_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+export async function seedFAQsIfEmpty(initialFAQs: any[]) {
+  const snapshot = await getDocs(collection(db, FAQS_COLLECTION));
+  if (snapshot.empty) {
+    console.log('Seeding FAQs...');
+    for (let i = 0; i < initialFAQs.length; i++) {
+      const faq = initialFAQs[i];
+      await saveFAQ({ ...faq, order: i });
+    }
+  }
+}
+
+export function subscribeToGalleryCategories(callback: (categories: GalleryCategory[]) => void) {
+  const q = query(collection(db, GALLERY_CATEGORIES_COLLECTION), orderBy('order', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    const categories = snapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    } as GalleryCategory));
+    callback(categories);
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, GALLERY_CATEGORIES_COLLECTION);
+  });
+}
+
+export async function saveGalleryCategory(category: Partial<GalleryCategory> & { id?: string }) {
+  const { id, ...data } = category;
+  const path = id ? `${GALLERY_CATEGORIES_COLLECTION}/${id}` : `${GALLERY_CATEGORIES_COLLECTION}`;
+  try {
+    const docRef = id ? doc(db, GALLERY_CATEGORIES_COLLECTION, id) : doc(collection(db, GALLERY_CATEGORIES_COLLECTION));
+    await setDoc(docRef, data, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteGalleryCategory(id: string) {
+  const path = `${GALLERY_CATEGORIES_COLLECTION}/${id}`;
+  try {
+    await deleteDoc(doc(db, GALLERY_CATEGORIES_COLLECTION, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
   }
 }

@@ -13,6 +13,7 @@ export interface Service {
   duration: string;
   image?: string;
   order: number;
+  isVisible?: boolean;
 }
 
 export enum BookingStatus {
@@ -45,17 +46,36 @@ export interface Review {
   content: string;
   date?: string;
   order: number;
+  isVisible?: boolean;
 }
 
 export interface GalleryItem {
   id?: string;
   url: string;
   caption?: string;
+  categoryId?: string;
   order: number;
+  isVisible?: boolean;
   createdAt?: any;
+}
+
+export interface GalleryCategory {
+  id?: string;
+  name: string;
+  order: number;
+  isVisible?: boolean;
+}
+
+export interface FAQ {
+  id?: string;
+  question: string;
+  answer: string;
+  order: number;
+  isVisible?: boolean;
 }
 
 export interface AppSettings {
   logoUrl?: string;
   siteName?: string;
+  faviconUrl?: string;
 }
