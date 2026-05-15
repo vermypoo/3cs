@@ -235,7 +235,7 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
               <div className="flex flex-col gap-2 col-span-full">
                 <label className="text-[10px] font-bold uppercase text-slate-500 tracking-[0.2em] ml-1">Notes / Location Details</label>
                 <textarea 
-                  placeholder="*1st line of address, *Post Code, any specific focus areas*"
+                  placeholder="1st line of address, Post Code, any specific focus areas."
                   className="w-full bg-slate-800/30 border border-slate-700 rounded-xl p-4 text-sm h-32 resize-none focus:outline-none focus:border-blue-500 text-white transition-all"
                   value={formData.notes}
                   onChange={e => setFormData({...formData, notes: e.target.value})}

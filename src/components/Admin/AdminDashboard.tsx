@@ -851,6 +851,15 @@ export default function AdminDashboard() {
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Window Time</label>
                   <input required type="time" className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-blue-500 outline-none transition-all" value={newBooking.time} onChange={e => setNewBooking({...newBooking, time: e.target.value})} />
                 </div>
+                <div className="flex flex-col gap-2 col-span-2">
+                  <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Notes / Location Details</label>
+                  <textarea 
+                    className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-blue-500 outline-none transition-all resize-none h-24" 
+                    placeholder="1st line of address, Post Code, any specific focus areas." 
+                    value={newBooking.notes} 
+                    onChange={e => setNewBooking({...newBooking, notes: e.target.value})} 
+                  />
+                </div>
                 <button type="submit" className="col-span-2 bg-blue-600 text-white font-bold rounded-2xl py-5 mt-4 group hover:bg-blue-500 transition-all uppercase tracking-widest text-[11px] flex items-center justify-center gap-3">
                   Commit Intake Record
                   <PhoneCall size={16} className="group-hover:rotate-12 transition-transform" />

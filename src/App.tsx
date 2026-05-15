@@ -17,6 +17,7 @@ import AdminLogin from './components/Admin/AdminLogin';
 import { CONTACT_INFO, SERVICES as INITIAL_SERVICES, REVIEWS as INITIAL_REVIEWS } from './constants';
 import { Instagram, Facebook, Phone, Mail, MapPin, CheckCircle2 } from 'lucide-react';
 import Logo from './components/Logo';
+import { motion } from 'motion/react';
 
 const Tiktok = ({ size = 24, className = "" }) => (
   <svg 
@@ -104,8 +105,30 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      <div className="h-screen bg-slate-background flex flex-col items-center justify-center p-6 text-center">
+        <motion.div
+           initial={{ scale: 0.8, opacity: 0 }}
+           animate={{ scale: 1, opacity: 1 }}
+           className="relative mb-8"
+        >
+          <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full animate-pulse" />
+          <Logo className="w-24 h-24 relative z-10" />
+        </motion.div>
+        
+        <div className="space-y-4 max-w-xs w-full">
+           <div className="h-0.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
+              <motion.div 
+                initial={{ left: '-100%' }}
+                animate={{ left: '100%' }}
+                transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-500 to-transparent"
+              />
+           </div>
+           <div className="animate-pulse">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Establishing Secure Session</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-700 mt-2">Checking Browser Integrity</p>
+           </div>
+        </div>
       </div>
     );
   }
