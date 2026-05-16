@@ -97,10 +97,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com'];
-    
+    const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com', '3csvaleting@googlemail.com'];
+    const authorizedUids = ['vxribHTzxlaLlp2C9WiL3jSXR113'];
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+      if (u && (authorizedEmails.includes(u.email?.toLowerCase() || '') || authorizedUids.includes(u.uid))) {
+        setUser(u);
+      } else {
+        setUser(null);
+      }
       setAuthLoading(false);
       
       // Seed if admin
@@ -264,9 +268,11 @@ export default function App() {
   // Admin View Logic
   if (isAdminView) {
     if (!user) return <AdminLogin />;
-    // Check if user is the specific admin email
-    const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com'];
-    if (!user.email || !authorizedEmails.includes(user.email.toLowerCase())) {
+    // Check if user is authorized
+    const authorizedEmails = ['uwureaperuwus@gmail.com', 'uwureaperuwu@gmail.com', '3csvaleting@gmail.com', '3csvaleting@googlemail.com'];
+    const authorizedUids = ['vxribHTzxlaLlp2C9WiL3jSXR113'];
+    
+    if (!(authorizedEmails.includes(user.email?.toLowerCase() || '') || authorizedUids.includes(user.uid))) {
       return (
         <div className="h-screen bg-black flex flex-col items-center justify-center p-8 text-center text-white">
           <h1 className="text-4xl font-bold mb-4">ACCESS DENIED</h1>
