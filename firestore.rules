@@ -59,11 +59,13 @@ service cloud.firestore {
     }
 
     function isValidGalleryItem(data) {
-      return data.url is string && data.url.size() <= 1500000 &&
+      return data.url is string && data.url.size() <= 2000000 &&
              (data.caption == null || (data.caption is string && data.caption.size() <= 1000)) &&
              (data.categoryId == null || (data.categoryId is string && data.categoryId.size() <= 128)) &&
              data.order is number &&
-             (data.isVisible == null || data.isVisible is bool);
+             (data.isVisible == null || data.isVisible is bool) &&
+             (data.createdAt == request.time || data.createdAt != null) &&
+             (data.updatedAt == request.time || data.updatedAt == null);
     }
 
     function isValidGalleryCategory(data) {
