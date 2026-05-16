@@ -16,7 +16,7 @@ service cloud.firestore {
         request.auth.token.email.lower() == "uwureaperuwus@gmail.com" || 
         request.auth.token.email.lower() == "uwureaperuwu@gmail.com" || 
         request.auth.token.email.lower() == "3csvaleting@gmail.com" ||
-        request.auth.uid == "vxribHTzxiaLIp2C9WiL3jSXR113"
+        request.auth.uid == "vxribHTzxlaLlp2C9WiL3jSXR113"
       );
     }
 
