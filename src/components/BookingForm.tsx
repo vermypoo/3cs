@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { BookingStatus, Service } from '../types';
 import { Calendar, Clock, Car, User, Mail, Phone, Send, CheckCircle2 } from 'lucide-react';
+import { handleFirestoreError, OperationType } from '../lib/firebase-utils';
 import Logo from './Logo';
 
 interface BookingFormProps {
@@ -65,7 +66,7 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
         notes: '',
       });
     } catch (error) {
-      console.error("Booking error:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'bookings');
       alert("Something went wrong. Please try again or call us directly.");
     } finally {
       setLoading(false);

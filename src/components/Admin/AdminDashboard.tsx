@@ -375,6 +375,7 @@ export default function AdminDashboard() {
       }
       e.target.value = '';
     } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, target === 'gallery' ? 'gallery' : (target === 'logo' ? 'settings/global' : 'services'));
       alert(`Upload error: ${err.message}`);
       e.target.value = '';
     } finally {
