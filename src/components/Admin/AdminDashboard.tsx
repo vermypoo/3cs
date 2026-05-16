@@ -139,6 +139,13 @@ export default function AdminDashboard() {
     }
   };
 
+  const formatPhoneNumber = (value: string) => {
+    if (value.startsWith('0')) {
+      return value.substring(1);
+    }
+    return value;
+  };
+
   const handleAddPhoneBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1427,7 +1434,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Secure Line</label>
-                  <input required className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-blue-500 outline-none transition-all" placeholder="Contact Number" value={newBooking.phone} onChange={e => setNewBooking({...newBooking, phone: e.target.value})} />
+                  <input required className="w-full bg-slate-900/60 border border-slate-800 rounded-xl p-4 text-sm font-medium focus:border-blue-500 outline-none transition-all" placeholder="Contact Number" value={newBooking.phone} onChange={e => setNewBooking({...newBooking, phone: formatPhoneNumber(e.target.value)})} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] uppercase font-black text-slate-600 tracking-widest ml-1">Machine Class</label>

@@ -31,7 +31,7 @@ export const SERVICES: Service[] = [
 ];
 
 export const CONTACT_INFO = {
-  phone: '+44 07858 53851',
+  phone: '+44 7858 53851',
   email: '3csvaleting@gmail.com',
   area: 'Local Service In Aylesbury',
 };

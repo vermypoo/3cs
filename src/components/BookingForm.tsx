@@ -31,6 +31,15 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
     }
   }, [visibleServices]);
 
+  const formatPhoneNumber = (value: string) => {
+    // If the value starts with 0 and it's followed by more digits, remove the leading 0
+    // This assumes they are typing in a context where +44 is already implied or they'll add it
+    if (value.startsWith('0')) {
+      return value.substring(1);
+    }
+    return value;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -165,7 +174,7 @@ export default function BookingForm({ availableServices }: BookingFormProps) {
                     placeholder="07XXX XXXXXX"
                     className="w-full bg-slate-800/30 border border-slate-700 rounded-xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-blue-500 text-white transition-all"
                     value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                    onChange={e => setFormData({...formData, phone: formatPhoneNumber(e.target.value)})}
                   />
                 </div>
               </div>

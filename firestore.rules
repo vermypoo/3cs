@@ -67,7 +67,7 @@ service cloud.firestore {
     }
 
     function isValidGalleryCategory(data) {
-      return data.name is string && data.name.size() <= 200 &&
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
              data.order is number &&
              (data.isVisible == null || data.isVisible is bool);
     }
@@ -115,7 +115,7 @@ service cloud.firestore {
     }
 
     match /gallery_categories/{categoryId} {
-      allow read: if true;
+      allow get, list: if true;
       allow create, update: if isAdmin() && isValidId(categoryId) && isValidGalleryCategory(request.resource.data);
       allow delete: if isAdmin();
     }

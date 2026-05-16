@@ -12,7 +12,9 @@ export default function AdminLogin() {
       await signInWithGoogle();
       // App.tsx handles state change via onAuthStateChanged
     } catch (err: any) {
-      if (err.code === 'auth/disallowed-useragent' || err.message?.includes('disallowed_useragent')) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError("LOGIN CANCELLED: The authentication window was closed before completion. Please try again.");
+      } else if (err.code === 'auth/disallowed-useragent' || err.message?.includes('disallowed_useragent')) {
         setError("LOGIN BLOCKED: Google prevents login from within some mobile apps and iframes. Please open this site in a standard browser (Safari/Chrome) to log in.");
       } else {
         setError("Login failed. Please check your credentials.");
