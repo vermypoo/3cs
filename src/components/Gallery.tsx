@@ -10,6 +10,7 @@ interface GalleryProps {
 
 export default function Gallery({ items, categories }: GalleryProps) {
   const [activeCategory, setActiveCategory] = React.useState<string | 'all'>('all');
+  const [showAll, setShowAll] = React.useState(false);
 
   const visibleCategories = categories.filter(cat => cat.isVisible !== false);
   const visibleItems = items.filter(item => item.isVisible !== false);
@@ -19,6 +20,8 @@ export default function Gallery({ items, categories }: GalleryProps) {
   const filteredItems = activeCategory === 'all' 
     ? visibleItems 
     : visibleItems.filter(item => item.categoryId === activeCategory);
+
+  const displayedItems = showAll ? filteredItems : filteredItems.slice(0, 6);
 
   return (
     <section className="py-24 bg-slate-background overflow-hidden" id="gallery">
@@ -57,7 +60,10 @@ export default function Gallery({ items, categories }: GalleryProps) {
         {visibleCategories.length > 0 && (
           <div className="flex flex-wrap gap-4 mb-12">
             <button
-              onClick={() => setActiveCategory('all')}
+              onClick={() => {
+                setActiveCategory('all');
+                setShowAll(false);
+              }}
               className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 activeCategory === 'all' 
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
@@ -69,7 +75,10 @@ export default function Gallery({ items, categories }: GalleryProps) {
             {visibleCategories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setActiveCategory(cat.id!)}
+                onClick={() => {
+                  setActiveCategory(cat.id!);
+                  setShowAll(false);
+                }}
                 className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                   activeCategory === cat.id 
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
@@ -82,9 +91,9 @@ export default function Gallery({ items, categories }: GalleryProps) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           <AnimatePresence mode="popLayout">
-            {filteredItems.map((item, index) => (
+            {displayedItems.map((item, index) => (
               <motion.div
                 key={item.id}
                 layout
@@ -111,6 +120,17 @@ export default function Gallery({ items, categories }: GalleryProps) {
           ))}
           </AnimatePresence>
         </div>
+
+        {filteredItems.length > 6 && !showAll && (
+          <div className="flex justify-center mt-12">
+            <button
+              onClick={() => setShowAll(true)}
+              className="px-12 py-4 bg-white text-black font-black uppercase tracking-widest text-xs rounded-full hover:bg-blue-500 hover:text-white transition-all transform hover:scale-105 active:scale-95 shadow-2xl shadow-white/5 active:bg-blue-600"
+            >
+              Explore Full Collection
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
